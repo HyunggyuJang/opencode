@@ -13,6 +13,8 @@ const versionFromTags = (input: string) => {
 
 const buildArgs = (args: string[]) => ["run", "script/build.ts", "--single", ...args]
 
+const gitArgs = () => ["describe", "--tags", "--match", "v*", "--abbrev=0"]
+
 const resolveVersion = (env: NodeJS.ProcessEnv, tags: string) => {
   if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
 
@@ -28,7 +30,7 @@ const autoupdateFromEnv = (env: NodeJS.ProcessEnv) => env.OPENCODE_DISABLE_AUTOU
 
 if (import.meta.main) {
   const run = async () => {
-    const cmd = await $`git describe --tags --match "v*"`.nothrow()
+    const cmd = await $`git ${gitArgs()}`.nothrow()
     const tags = cmd.stdout.toString()
     const version = resolveVersion(process.env, tags)
     const channel = channelFromEnv(process.env)
@@ -46,4 +48,4 @@ if (import.meta.main) {
   await run()
 }
 
-export { autoupdateFromEnv, buildArgs, channelFromEnv, resolveVersion, versionFromTags }
+export { autoupdateFromEnv, buildArgs, channelFromEnv, gitArgs, resolveVersion, versionFromTags }
