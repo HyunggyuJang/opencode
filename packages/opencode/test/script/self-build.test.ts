@@ -1,9 +1,14 @@
+import path from "path"
 import { describe, expect, test } from "bun:test"
 import {
   autoupdateFromEnv,
+  binaryName,
+  binaryPath,
   buildArgs,
   channelFromEnv,
   gitArgs,
+  linkPath,
+  platformName,
   resolveVersion,
   versionFromTags,
 } from "../../script/self-build"
@@ -59,5 +64,27 @@ describe("self-build env resolution", () => {
   test("autoupdateFromEnv defaults to 1", () => {
     const value = autoupdateFromEnv({})
     expect(value).toBe("1")
+  })
+})
+
+describe("self-build linking", () => {
+  test("platformName maps win32 to windows", () => {
+    const value = platformName("win32")
+    expect(value).toBe("windows")
+  })
+
+  test("binaryName uses .exe on win32", () => {
+    const value = binaryName("win32")
+    expect(value).toBe("opencode.exe")
+  })
+
+  test("binaryPath points to dist binary", () => {
+    const value = binaryPath("/repo", "darwin", "arm64")
+    expect(value).toBe(path.join("/repo", "dist", "opencode-darwin-arm64", "bin", "opencode"))
+  })
+
+  test("linkPath points to ~/.local/bin", () => {
+    const value = linkPath("/home/me", "opencode")
+    expect(value).toBe(path.join("/home/me", ".local", "bin", "opencode"))
   })
 })
