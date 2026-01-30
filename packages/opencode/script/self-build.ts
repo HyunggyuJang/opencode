@@ -1,4 +1,6 @@
 import { $ } from "bun"
+import { mkdir, symlink } from "node:fs/promises"
+import os from "node:os"
 import path from "path"
 
 const versionFromTags = (input: string) => {
@@ -38,6 +40,17 @@ const binaryPath = (root: string, platform: string, arch: string) =>
 
 const linkPath = (home: string, name: string) => path.join(home, ".local", "bin", name)
 
+const linkSpec = (root: string, home: string, platform: string, arch: string) => {
+  const source = binaryPath(root, platform, arch)
+  const dest = linkPath(home, binaryName(platform))
+
+  return {
+    source,
+    dest,
+    dir: path.dirname(dest),
+  }
+}
+
 if (import.meta.main) {
   const run = async () => {
     const cmd = await $`git ${gitArgs()}`.nothrow()
@@ -53,6 +66,28 @@ if (import.meta.main) {
       OPENCODE_CHANNEL: channel,
       OPENCODE_DISABLE_AUTOUPDATE: autoupdate,
     })
+
+    if (process.platform === "win32") return
+
+    const spec = linkSpec(process.cwd(), os.homedir(), process.platform, process.arch)
+    const exists = await Bun.file(spec.source).exists()
+    if (!exists) {
+      console.warn(`self-build: binary missing at ${spec.source}, skipping auto-link`)
+      return
+    }
+
+    const ready = await mkdir(spec.dir, { recursive: true })
+      .then(() => true)
+      .catch((error) => {
+        console.warn(`self-build: failed to create ${spec.dir}, skipping auto-link`, error)
+        return false
+      })
+
+    if (!ready) return
+
+    await symlink(spec.source, spec.dest).catch((error) => {
+      console.warn(`self-build: failed to link ${spec.dest}, skipping auto-link`, error)
+    })
   }
 
   await run()
@@ -66,6 +101,7 @@ export {
   channelFromEnv,
   gitArgs,
   linkPath,
+  linkSpec,
   platformName,
   resolveVersion,
   versionFromTags,
