@@ -15,7 +15,8 @@ import { PermissionNext } from "@/permission/next"
 import { Skill } from "@/skill"
 
 export namespace SystemPrompt {
-  export function instructions() {
+  export function instructions(prompt?: string) {
+    if (prompt) return prompt
     return PROMPT_CODEX.trim()
   }
 
