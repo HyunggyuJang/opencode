@@ -112,7 +112,7 @@ export namespace LLM {
       mergeDeep(variant),
     )
     if (isCodex) {
-      options.instructions = SystemPrompt.instructions()
+      options.instructions = SystemPrompt.instructions(input.agent.prompt)
     }
 
     const params = await Plugin.trigger(
