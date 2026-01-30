@@ -8,6 +8,7 @@ import {
   channelFromEnv,
   gitArgs,
   linkPath,
+  linkAction,
   linkSpec,
   platformName,
   resolveVersion,
@@ -96,5 +97,20 @@ describe("self-build linking", () => {
       dest: path.join("/home/me", ".local", "bin", "opencode"),
       dir: path.join("/home/me", ".local", "bin"),
     })
+  })
+
+  test("linkAction creates when no target", () => {
+    const value = linkAction("/source", null)
+    expect(value).toBe("create")
+  })
+
+  test("linkAction skips when target matches", () => {
+    const value = linkAction("/source", "/source")
+    expect(value).toBe("skip")
+  })
+
+  test("linkAction replaces when target differs", () => {
+    const value = linkAction("/source", "/other")
+    expect(value).toBe("replace")
   })
 })
