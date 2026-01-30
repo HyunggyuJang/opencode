@@ -66,10 +66,11 @@ git -c rerere.enabled=true rebase --rebase-merges v0.1.49
 Build the patched binary with the upstream base version injected:
 
 ```bash
-OPENCODE_VERSION=0.1.48 OPENCODE_CHANNEL=latest bun run ./packages/opencode/script/build.ts --single
+bun run self-build
 ```
 
-This sets `opencode --version` to `0.1.48` instead of a preview tag.
+This sets `opencode --version` to the upstream base version. Optionally override
+`OPENCODE_VERSION`, `OPENCODE_CHANNEL`, or `OPENCODE_DISABLE_AUTOUPDATE`.
 
 ## Autoupdate Behavior
 
