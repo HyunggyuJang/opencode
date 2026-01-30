@@ -58,7 +58,7 @@ bun dev .
 To compile a standalone executable:
 
 ```bash
-./packages/opencode/script/build.ts --single
+bun run self-build
 ```
 
 Then run it with:
