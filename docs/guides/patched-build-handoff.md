@@ -72,6 +72,9 @@ bun run self-build
 This sets `opencode --version` to the upstream base version. Optionally override
 `OPENCODE_VERSION`, `OPENCODE_CHANNEL`, or `OPENCODE_DISABLE_AUTOUPDATE`.
 
+On macOS and Linux, `bun run self-build` also auto-links the binary to
+`~/.local/bin/opencode`. Add `~/.local/bin` to your PATH if it is not already.
+
 ## Autoupdate Behavior
 
 Disable auto update to prevent upgrade prompts:
