@@ -1,5 +1,5 @@
 import { $ } from "bun"
-import { mkdir, symlink } from "node:fs/promises"
+import { lstat, mkdir, readlink, symlink, unlink } from "node:fs/promises"
 import os from "node:os"
 import path from "path"
 
@@ -51,6 +51,12 @@ const linkSpec = (root: string, home: string, platform: string, arch: string) =>
   }
 }
 
+const linkAction = (source: string, current: string | null) => {
+  if (current === null) return "create"
+  if (current === source) return "skip"
+  return "replace"
+}
+
 if (import.meta.main) {
   const run = async () => {
     const cmd = await $`git ${gitArgs()}`.nothrow()
@@ -85,6 +91,34 @@ if (import.meta.main) {
 
     if (!ready) return
 
+    const stat = await lstat(spec.dest)
+      .then((value) => value)
+      .catch(() => null)
+
+    if (stat && !stat.isSymbolicLink()) {
+      console.warn(`self-build: ${spec.dest} exists and is not a symlink, skipping auto-link`)
+      return
+    }
+
+    const current = stat
+      ? await readlink(spec.dest)
+          .then((value) => value)
+          .catch(() => "")
+      : null
+    const action = linkAction(spec.source, current)
+    if (action === "skip") return
+
+    if (action === "replace") {
+      const removed = await unlink(spec.dest)
+        .then(() => true)
+        .catch((error) => {
+          console.warn(`self-build: failed to remove ${spec.dest}, skipping auto-link`, error)
+          return false
+        })
+
+      if (!removed) return
+    }
+
     await symlink(spec.source, spec.dest).catch((error) => {
       console.warn(`self-build: failed to link ${spec.dest}, skipping auto-link`, error)
     })
@@ -100,6 +134,7 @@ export {
   buildArgs,
   channelFromEnv,
   gitArgs,
+  linkAction,
   linkPath,
   linkSpec,
   platformName,
