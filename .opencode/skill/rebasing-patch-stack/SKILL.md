@@ -37,14 +37,17 @@ git -c rerere.enabled=true rebase --rebase-merges "$tag"
 
 ## Quick Reference
 
-| Step            | Command                                                   |
-| --------------- | --------------------------------------------------------- |
-| Pick remote     | `git remote -v` (prefer `upstream` if present)            |
-| Fetch tags      | `git fetch <remote> --tags`                               |
-| Latest tag      | `git tag --list 'v*' --sort=-v:refname \| head -n 1`      |
-| Rebase          | `git -c rerere.enabled=true rebase --rebase-merges <tag>` |
-| Conflict signal | `Patch needs resolution for <tag>` (only on conflict)     |
-| Build check     | `bun run self-build`                                      |
+| Step            | Command                                                       |
+| --------------- | ------------------------------------------------------------- |
+| Pick remote     | `git remote -v` (prefer `upstream` if present)                |
+| Fetch tags      | `git fetch <remote> --tags`                                   |
+| Latest tag      | `git tag --list 'v*' --sort=-v:refname \| head -n 1`          |
+| Latest patch    | `git branch --list 'patch/v*' --sort=-v:refname \| head -n 1` |
+| New patch name  | `patch/<tag>` (match the upstream tag)                        |
+| Create branch   | `git switch <patch> && git switch -c patch/<tag>`             |
+| Rebase          | `git -c rerere.enabled=true rebase --rebase-merges <tag>`     |
+| Conflict signal | `Patch needs resolution for <tag>` (only on conflict)         |
+| Build check     | `bun run self-build`                                          |
 
 ## Implementation
 
@@ -57,14 +60,19 @@ git fetch "$remote" --tags
 tag="$(git tag --list 'v*' --sort=-v:refname | head -n 1)"
 test -n "$tag" || { echo "No upstream tags found"; exit 1; }
 
-# 3) Stay on your existing patch branch
-branch="$(git branch --show-current)"
-test "${branch#patch/}" != "$branch" || { echo "Checkout a patch/* branch first"; exit 1; }
+# 3) Start from the latest patch branch, keep it intact
+patch="$(git branch --list 'patch/v*' --sort=-v:refname | head -n 1)"
+test -n "$patch" || { echo "No patch/v* branches found"; exit 1; }
+git switch "$patch"
 
-# 4) Rebase with merge preservation and rerere
+# 4) Create a new patch branch named for the tag
+next="patch/$tag"
+git switch -c "$next"
+
+# 5) Rebase with merge preservation and rerere
 git -c rerere.enabled=true rebase --rebase-merges "$tag"
 
-# 5) If conflicts happen, print:
+# 6) If conflicts happen, print:
 # Patch needs resolution for <tag>
 ```
 
@@ -73,6 +81,7 @@ git -c rerere.enabled=true rebase --rebase-merges "$tag"
 ```sh
 git fetch upstream --tags
 git checkout patch/v0.1.48
+git switch -c patch/v0.1.49
 git -c rerere.enabled=true rebase --rebase-merges v0.1.49
 ```
 
