@@ -80,15 +80,52 @@ git commit -m "test: add self-build helper coverage"
 
 **Step 1: Write the failing test**
 
-- No new tests required beyond Task 1 (helpers already cover tag parsing and arg construction).
+```ts
+import { describe, expect, test } from "bun:test"
+import { autoupdateFromEnv, channelFromEnv, resolveVersion } from "../../script/self-build"
+
+describe("self-build env resolution", () => {
+  test("resolveVersion prefers OPENCODE_VERSION", () => {
+    const value = resolveVersion(
+      {
+        OPENCODE_VERSION: "0.1.99",
+      },
+      "v0.1.48\n",
+    )
+    expect(value).toBe("0.1.99")
+  })
+
+  test("resolveVersion falls back to git tags", () => {
+    const value = resolveVersion({}, "v0.1.48\n")
+    expect(value).toBe("0.1.48")
+  })
+
+  test("resolveVersion throws when no version is available", () => {
+    const run = () => resolveVersion({}, "\n")
+    expect(run).toThrow("No git tags found")
+  })
+
+  test("channelFromEnv defaults to latest", () => {
+    const value = channelFromEnv({})
+    expect(value).toBe("latest")
+  })
+
+  test("autoupdateFromEnv defaults to 1", () => {
+    const value = autoupdateFromEnv({})
+    expect(value).toBe("1")
+  })
+})
+```
 
 **Step 2: Run test to verify it fails**
 
-- Not applicable.
+Run (from `packages/opencode`): `bun test test/script/self-build.test.ts`
+Expected: FAIL because new helpers are not implemented yet.
 
 **Step 3: Write minimal implementation**
 
-- Resolve `OPENCODE_VERSION` from env or the latest `v*` git tag.
+- Add `resolveVersion`, `channelFromEnv`, and `autoupdateFromEnv` helpers to `packages/opencode/script/self-build.ts`.
+- Resolve `OPENCODE_VERSION` from env or the latest `v*` git tag (throw when missing).
 - Default `OPENCODE_CHANNEL` to `latest` unless already set.
 - Default `OPENCODE_DISABLE_AUTOUPDATE` to `1` unless already set.
 - Invoke `bun run script/build.ts --single` plus any extra args.
