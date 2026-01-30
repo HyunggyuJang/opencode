@@ -8,6 +8,7 @@ import {
   channelFromEnv,
   gitArgs,
   linkPath,
+  linkSpec,
   platformName,
   resolveVersion,
   versionFromTags,
@@ -86,5 +87,14 @@ describe("self-build linking", () => {
   test("linkPath points to ~/.local/bin", () => {
     const value = linkPath("/home/me", "opencode")
     expect(value).toBe(path.join("/home/me", ".local", "bin", "opencode"))
+  })
+
+  test("linkSpec resolves source, dest, and dir", () => {
+    const value = linkSpec("/repo", "/home/me", "darwin", "arm64")
+    expect(value).toEqual({
+      source: path.join("/repo", "dist", "opencode-darwin-arm64", "bin", "opencode"),
+      dest: path.join("/home/me", ".local", "bin", "opencode"),
+      dir: path.join("/home/me", ".local", "bin"),
+    })
   })
 })
