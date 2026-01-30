@@ -2,6 +2,8 @@
 - ALWAYS USE PARALLEL TOOLS WHEN APPLICABLE.
 - The default branch in this repo is `dev`.
 - Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
+- Docs index: `docs/agents/index.md:1`.
+- Self-build entrypoint: `packages/opencode/script/self-build.ts:1`.
 
 ## Style Guide
 
