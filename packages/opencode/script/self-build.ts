@@ -1,4 +1,5 @@
 import { $ } from "bun"
+import path from "path"
 
 const versionFromTags = (input: string) => {
   const value = input
@@ -28,6 +29,15 @@ const channelFromEnv = (env: NodeJS.ProcessEnv) => env.OPENCODE_CHANNEL ?? "late
 
 const autoupdateFromEnv = (env: NodeJS.ProcessEnv) => env.OPENCODE_DISABLE_AUTOUPDATE ?? "1"
 
+const platformName = (platform: string) => (platform === "win32" ? "windows" : platform)
+
+const binaryName = (platform: string) => (platform === "win32" ? "opencode.exe" : "opencode")
+
+const binaryPath = (root: string, platform: string, arch: string) =>
+  path.join(root, "dist", `opencode-${platformName(platform)}-${arch}`, "bin", binaryName(platform))
+
+const linkPath = (home: string, name: string) => path.join(home, ".local", "bin", name)
+
 if (import.meta.main) {
   const run = async () => {
     const cmd = await $`git ${gitArgs()}`.nothrow()
@@ -48,4 +58,15 @@ if (import.meta.main) {
   await run()
 }
 
-export { autoupdateFromEnv, buildArgs, channelFromEnv, gitArgs, resolveVersion, versionFromTags }
+export {
+  autoupdateFromEnv,
+  binaryName,
+  binaryPath,
+  buildArgs,
+  channelFromEnv,
+  gitArgs,
+  linkPath,
+  platformName,
+  resolveVersion,
+  versionFromTags,
+}
