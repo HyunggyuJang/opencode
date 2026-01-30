@@ -85,14 +85,16 @@ git commit -m "test: cover self-build auto-link helpers"
 
 **Step 1: Write the failing test**
 
-- No new tests required beyond Task 1.
+- Add a test for a new pure helper (e.g., `linkSpec`) that returns `{ source, dest, dir }` for auto-linking.
 
 **Step 2: Run test to verify it fails**
 
-- Not applicable.
+Run (from `packages/opencode`): `bun test test/script/self-build.test.ts`
+Expected: FAIL because the helper is missing.
 
 **Step 3: Write minimal implementation**
 
+- Add and export the new helper that returns `{ source, dest, dir }` for linking.
 - After build completes, resolve the built binary path from `dist/` using the new helpers.
 - If the binary is missing, log a warning and skip linking.
 - On non-Windows platforms, create `~/.local/bin` and symlink the binary to `~/.local/bin/opencode`.
@@ -106,7 +108,7 @@ Expected: PASS.
 **Step 5: Commit**
 
 ```bash
-git add packages/opencode/script/self-build.ts
+git add packages/opencode/script/self-build.ts packages/opencode/test/script/self-build.test.ts
 git commit -m "feat: auto-link self-build binary"
 ```
 
