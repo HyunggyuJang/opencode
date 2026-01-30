@@ -1,3 +1,5 @@
+import { $ } from "bun"
+
 const versionFromTags = (input: string) => {
   const value = input
     .split("\n")
@@ -11,7 +13,37 @@ const versionFromTags = (input: string) => {
 
 const buildArgs = (args: string[]) => ["run", "script/build.ts", "--single", ...args]
 
-if (import.meta.main) {
+const resolveVersion = (env: NodeJS.ProcessEnv, tags: string) => {
+  if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
+
+  const value = versionFromTags(tags)
+  if (!value) throw new Error("No git tags found")
+
+  return value
 }
 
-export { buildArgs, versionFromTags }
+const channelFromEnv = (env: NodeJS.ProcessEnv) => env.OPENCODE_CHANNEL ?? "latest"
+
+const autoupdateFromEnv = (env: NodeJS.ProcessEnv) => env.OPENCODE_DISABLE_AUTOUPDATE ?? "1"
+
+if (import.meta.main) {
+  const run = async () => {
+    const cmd = await $`git describe --tags --match "v*"`.nothrow()
+    const tags = cmd.stdout.toString()
+    const version = resolveVersion(process.env, tags)
+    const channel = channelFromEnv(process.env)
+    const autoupdate = autoupdateFromEnv(process.env)
+    const args = buildArgs(Bun.argv.slice(2))
+
+    await $`bun ${args}`.env({
+      ...process.env,
+      OPENCODE_VERSION: version,
+      OPENCODE_CHANNEL: channel,
+      OPENCODE_DISABLE_AUTOUPDATE: autoupdate,
+    })
+  }
+
+  await run()
+}
+
+export { autoupdateFromEnv, buildArgs, channelFromEnv, resolveVersion, versionFromTags }
