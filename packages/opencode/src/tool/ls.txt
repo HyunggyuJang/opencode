@@ -1,1 +1,5 @@
-Lists files and directories in a given path. The path parameter must be absolute; omit it to use the current workspace directory. You can optionally provide an array of glob patterns to ignore with the ignore parameter. You should generally prefer the Glob and Grep tools, if you know which directories to search.
+List files and directories.
+
+- path must be absolute; omit to use the workspace directory.
+- ignore accepts glob patterns.
+- Prefer Glob/Grep when you know what to search.
