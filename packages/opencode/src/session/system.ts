@@ -12,7 +12,8 @@ import PROMPT_TRINITY from "./prompt/trinity.txt"
 import type { Provider } from "@/provider/provider"
 
 export namespace SystemPrompt {
-  export function instructions() {
+  export function instructions(prompt?: string) {
+    if (prompt) return prompt
     return PROMPT_CODEX.trim()
   }
 
