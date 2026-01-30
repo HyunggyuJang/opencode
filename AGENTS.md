@@ -3,6 +3,8 @@
 - The default branch in this repo is `dev`.
 - Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
 - Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
+- Docs index: `docs/agents/index.md:1`.
+- Self-build entrypoint: `packages/opencode/script/self-build.ts:1`.
 
 ## Style Guide
 
