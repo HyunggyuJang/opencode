@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test"
-import { autoupdateFromEnv, buildArgs, channelFromEnv, resolveVersion, versionFromTags } from "../../script/self-build"
+import {
+  autoupdateFromEnv,
+  buildArgs,
+  channelFromEnv,
+  gitArgs,
+  resolveVersion,
+  versionFromTags,
+} from "../../script/self-build"
 
 describe("self-build helpers", () => {
   test("versionFromTags strips v prefix", () => {
@@ -15,6 +22,11 @@ describe("self-build helpers", () => {
   test("buildArgs prepends build command", () => {
     const args = buildArgs(["--baseline"])
     expect(args).toEqual(["run", "script/build.ts", "--single", "--baseline"])
+  })
+
+  test("gitArgs uses tag-only describe", () => {
+    const args = gitArgs()
+    expect(args).toEqual(["describe", "--tags", "--match", "v*", "--abbrev=0"])
   })
 })
 
