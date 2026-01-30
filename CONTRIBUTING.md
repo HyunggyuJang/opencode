@@ -56,6 +56,9 @@ To compile a standalone executable:
 bun run self-build
 ```
 
+On macOS and Linux, `bun run self-build` auto-links the binary to
+`~/.local/bin/opencode`. Add `~/.local/bin` to your PATH if it is not already.
+
 Then run it with:
 
 ```bash
