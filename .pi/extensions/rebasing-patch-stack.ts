@@ -191,86 +191,99 @@ const promptRebaseResolution = async (pi: ExtensionAPI, ctx: ExtensionContext, c
   }
 }
 
+const run = async (pi: ExtensionAPI, ctx: ExtensionContext) => {
+  const repoRoot = await getRepoRoot(pi, ctx.cwd)
+  if (!repoRoot) return
+
+  const remote = await getPreferredRemote(pi, repoRoot)
+  if (!remote) return
+
+  const latestTag = await getLatestRemoteTag(pi, repoRoot, remote)
+  if (!latestTag) return
+
+  const fetched = await fetchTags(pi, repoRoot, remote)
+  if (!fetched) {
+    ctx.ui.notify(`Failed to fetch tags from ${remote}`, "error")
+    return
+  }
+
+  const latestPatch = await getLatestPatchBranch(pi, repoRoot)
+  if (!latestPatch) return
+
+  const tagVersion = parseVersion(latestTag)
+  const patchVersion = parseVersion(latestPatch.replace(/^patch\//, ""))
+  if (!tagVersion || !patchVersion) return
+
+  if (compareVersions(tagVersion, patchVersion) <= 0) return
+
+  const workingTreeClean = await isWorkingTreeClean(pi, repoRoot)
+  if (!workingTreeClean) {
+    ctx.ui.notify("Working tree is dirty; skipping patch update prompt.", "warning")
+    return
+  }
+
+  const nextBranch = `patch/${latestTag}`
+  if (await branchExists(pi, repoRoot, nextBranch)) {
+    ctx.ui.notify(`${nextBranch} already exists.`, "info")
+    return
+  }
+
+  const confirm = await ctx.ui.confirm(
+    "Create patch branch?",
+    [
+      `New upstream tag: ${latestTag}`,
+      `Latest patch branch: ${latestPatch}`,
+      `This will create ${nextBranch}, rebase ${latestPatch} onto ${latestTag}, and run bun run self-build.`,
+    ].join("\n"),
+  )
+  if (!confirm) return
+
+  ctx.ui.setStatus("patch-update", "Creating patch branch...")
+  try {
+    await runCheckedCommand(pi, repoRoot, "git", ["fetch", remote, "--tags"])
+    await runCheckedCommand(pi, repoRoot, "git", ["switch", latestPatch])
+    await runCheckedCommand(pi, repoRoot, "git", ["switch", "-c", nextBranch])
+    await runCheckedCommand(pi, repoRoot, "git", ["-c", "rerere.enabled=true", "rebase", "--rebase-merges", latestTag])
+    await runCheckedCommand(pi, repoRoot, "bun", ["run", "self-build"])
+
+    ctx.ui.notify(`Created ${nextBranch} and completed self-build.`, "info")
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const rebaseInProgress = await isRebaseInProgress(pi, repoRoot)
+    const failureMessage = buildFailureMessage(message, rebaseInProgress)
+
+    ctx.ui.notify(`Patch update failed: ${message}`, "error")
+    pi.sendMessage(
+      {
+        customType: "patch-update",
+        content: failureMessage,
+        display: true,
+        details: { error: message, rebaseInProgress },
+      },
+      { deliverAs: "nextTurn" },
+    )
+
+    if (rebaseInProgress) {
+      await promptRebaseResolution(pi, ctx, repoRoot)
+    }
+  } finally {
+    ctx.ui.setStatus("patch-update", undefined)
+  }
+}
+
+const defer = (pi: ExtensionAPI, ctx: ExtensionContext) => {
+  setTimeout(() => {
+    void run(pi, ctx).catch((error) => {
+      const message = error instanceof Error ? error.message : String(error)
+      ctx.ui.notify(`Patch update check failed: ${message}`, "error")
+    })
+  }, 0)
+}
+
 export default function (pi: ExtensionAPI) {
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", (_event, ctx) => {
     if (!ctx.hasUI) return
 
-    const repoRoot = await getRepoRoot(pi, ctx.cwd)
-    if (!repoRoot) return
-
-    const remote = await getPreferredRemote(pi, repoRoot)
-    if (!remote) return
-
-    const latestTag = await getLatestRemoteTag(pi, repoRoot, remote)
-    if (!latestTag) return
-
-    const fetched = await fetchTags(pi, repoRoot, remote)
-    if (!fetched) {
-      ctx.ui.notify(`Failed to fetch tags from ${remote}`, "error")
-      return
-    }
-
-    const latestPatch = await getLatestPatchBranch(pi, repoRoot)
-    if (!latestPatch) return
-
-    const tagVersion = parseVersion(latestTag)
-    const patchVersion = parseVersion(latestPatch.replace(/^patch\//, ""))
-    if (!tagVersion || !patchVersion) return
-
-    if (compareVersions(tagVersion, patchVersion) <= 0) return
-
-    const workingTreeClean = await isWorkingTreeClean(pi, repoRoot)
-    if (!workingTreeClean) {
-      ctx.ui.notify("Working tree is dirty; skipping patch update prompt.", "warning")
-      return
-    }
-
-    const nextBranch = `patch/${latestTag}`
-    if (await branchExists(pi, repoRoot, nextBranch)) {
-      ctx.ui.notify(`${nextBranch} already exists.`, "info")
-      return
-    }
-
-    const confirm = await ctx.ui.confirm(
-      "Create patch branch?",
-      [
-        `New upstream tag: ${latestTag}`,
-        `Latest patch branch: ${latestPatch}`,
-        `This will create ${nextBranch}, rebase ${latestPatch} onto ${latestTag}, and run bun run self-build.`,
-      ].join("\n"),
-    )
-    if (!confirm) return
-
-    ctx.ui.setStatus("patch-update", "Creating patch branch...")
-    try {
-      await runCheckedCommand(pi, repoRoot, "git", ["fetch", remote, "--tags"])
-      await runCheckedCommand(pi, repoRoot, "git", ["switch", latestPatch])
-      await runCheckedCommand(pi, repoRoot, "git", ["switch", "-c", nextBranch])
-      await runCheckedCommand(pi, repoRoot, "git", ["-c", "rerere.enabled=true", "rebase", "--rebase-merges", latestTag])
-      await runCheckedCommand(pi, repoRoot, "bun", ["run", "self-build"])
-
-      ctx.ui.notify(`Created ${nextBranch} and completed self-build.`, "info")
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      const rebaseInProgress = await isRebaseInProgress(pi, repoRoot)
-      const failureMessage = buildFailureMessage(message, rebaseInProgress)
-
-      ctx.ui.notify(`Patch update failed: ${message}`, "error")
-      pi.sendMessage(
-        {
-          customType: "patch-update",
-          content: failureMessage,
-          display: true,
-          details: { error: message, rebaseInProgress },
-        },
-        { deliverAs: "nextTurn" },
-      )
-
-      if (rebaseInProgress) {
-        await promptRebaseResolution(pi, ctx, repoRoot)
-      }
-    } finally {
-      ctx.ui.setStatus("patch-update", undefined)
-    }
+    defer(pi, ctx)
   })
 }
