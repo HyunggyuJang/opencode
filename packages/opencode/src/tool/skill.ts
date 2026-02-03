@@ -23,6 +23,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
           "Load a skill to get detailed instructions for a specific task.",
           "Skills provide specialized knowledge and step-by-step guidance.",
           "Use this when a task matches an available skill's description.",
+          "When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
           "Only the skills listed here are available:",
           "<available_skills>",
           ...accessibleSkills.flatMap((skill) => [
@@ -32,7 +33,7 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
             `  </skill>`,
           ]),
           "</available_skills>",
-        ].join(" ")
+        ].join("\n")
 
   const examples = accessibleSkills
     .map((skill) => `'${skill.name}'`)
