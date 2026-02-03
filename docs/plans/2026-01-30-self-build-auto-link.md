@@ -8,7 +8,7 @@
 
 **Commit Intent:** per-task
 
-**Execution Decision:** `superpowers:subagent-driven-development`
+**Execution Decision:** `subagent-driven-development`
 
 ---
 
