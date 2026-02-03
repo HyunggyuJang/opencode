@@ -2,7 +2,8 @@
  * Patch Update Notice
  *
  * Detects newer upstream v* tags and offers to create a new patch/<tag>
- * branch by rebasing the latest patch branch, then runs bun run self-build.
+ * branch by rebasing the latest patch branch, then runs bun run self-build
+ * and pushes the branch to origin.
  */
 
 import fs from "node:fs"
@@ -95,18 +96,27 @@ const isRebaseInProgress = async (pi: ExtensionAPI, cwd: string) => {
   )
 }
 
-const getPreferredRemote = async (pi: ExtensionAPI, cwd: string) => {
+const listRemotes = async (pi: ExtensionAPI, cwd: string) => {
   const result = await pi.exec("git", ["remote"], { cwd })
   if (result.code !== 0) return
 
-  const remotes = result.stdout
+  return result.stdout
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
+}
 
-  if (remotes.length === 0) return
+const getPreferredRemote = async (pi: ExtensionAPI, cwd: string) => {
+  const remotes = await listRemotes(pi, cwd)
+  if (!remotes || remotes.length === 0) return
   if (remotes.includes("upstream")) return "upstream"
   return remotes[0]
+}
+
+const hasRemote = async (pi: ExtensionAPI, cwd: string, name: string) => {
+  const remotes = await listRemotes(pi, cwd)
+  if (!remotes) return false
+  return remotes.includes(name)
 }
 
 const fetchTags = async (pi: ExtensionAPI, cwd: string, remote: string) => {
@@ -233,7 +243,7 @@ const run = async (pi: ExtensionAPI, ctx: ExtensionContext) => {
     [
       `New upstream tag: ${latestTag}`,
       `Latest patch branch: ${latestPatch}`,
-      `This will create ${nextBranch}, rebase ${latestPatch} onto ${latestTag}, and run bun run self-build.`,
+      `This will create ${nextBranch}, rebase ${latestPatch} onto ${latestTag}, run bun run self-build, and push to origin.`,
     ].join("\n"),
   )
   if (!confirm) return
@@ -246,7 +256,16 @@ const run = async (pi: ExtensionAPI, ctx: ExtensionContext) => {
     await runCheckedCommand(pi, repoRoot, "git", ["-c", "rerere.enabled=true", "rebase", "--rebase-merges", latestTag])
     await runCheckedCommand(pi, repoRoot, "bun", ["run", "self-build"])
 
-    ctx.ui.notify(`Created ${nextBranch} and completed self-build.`, "info")
+    const origin = await hasRemote(pi, repoRoot, "origin")
+    if (!origin) {
+      ctx.ui.notify("origin remote not found; skipping push.", "warning")
+      ctx.ui.notify(`Created ${nextBranch} and completed self-build.`, "info")
+      return
+    }
+
+    await runCheckedCommand(pi, repoRoot, "git", ["push", "origin", nextBranch])
+
+    ctx.ui.notify(`Created ${nextBranch}, completed self-build, and pushed to origin.`, "info")
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     const rebaseInProgress = await isRebaseInProgress(pi, repoRoot)
