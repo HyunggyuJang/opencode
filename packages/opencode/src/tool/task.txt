@@ -9,6 +9,7 @@ Usage notes:
 - Use this tool for slash commands when instructed.
 - Provide a detailed prompt and the expected output.
 - Each agent is stateless unless you pass session_id; reuse it to resume a prior subagent.
+- The tool output ends with <task_metadata> containing session_id; copy that value when resuming the same subagent.
 - Results return as a single message; summarize it for the user.
 - Run independent subagents in parallel.
 - Avoid Task for simple file reads or small searches; use Read/Glob/Grep instead.
