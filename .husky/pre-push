@@ -9,7 +9,11 @@ const expectedBunVersion = pkg.packageManager?.split("@")[1];
 if (!expectedBunVersion) {
   throw new Error("packageManager field not found in root package.json");
 }
-const expectedBunVersionRange = `^${expectedBunVersion}`;
+const [major, minor] = expectedBunVersion.split(".").map((item) => Number(item));
+if (!Number.isInteger(major) || !Number.isInteger(minor)) {
+  throw new Error(`Invalid packageManager bun version: ${expectedBunVersion}`);
+}
+const expectedBunVersionRange = `>=${major}.${minor}.0 <${major}.${minor + 1}.0`;
 if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
   throw new Error(`This script requires bun@${expectedBunVersionRange}, but you are using bun@${process.versions.bun}`);
 }
