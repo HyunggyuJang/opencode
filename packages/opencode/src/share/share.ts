@@ -46,24 +46,37 @@ export namespace Share {
       })
   }
 
+  let unsubs: (() => void)[] = []
+
   export function init() {
-    Bus.subscribe(Session.Event.Updated, async (evt) => {
-      await sync("session/info/" + evt.properties.info.id, evt.properties.info)
-    })
-    Bus.subscribe(MessageV2.Event.Updated, async (evt) => {
-      await sync("session/message/" + evt.properties.info.sessionID + "/" + evt.properties.info.id, evt.properties.info)
-    })
-    Bus.subscribe(MessageV2.Event.PartUpdated, async (evt) => {
-      await sync(
-        "session/part/" +
-          evt.properties.part.sessionID +
-          "/" +
-          evt.properties.part.messageID +
-          "/" +
-          evt.properties.part.id,
-        evt.properties.part,
-      )
-    })
+    dispose()
+    unsubs.push(
+      Bus.subscribe(Session.Event.Updated, async (evt) => {
+        await sync("session/info/" + evt.properties.info.id, evt.properties.info)
+      }),
+      Bus.subscribe(MessageV2.Event.Updated, async (evt) => {
+        await sync(
+          "session/message/" + evt.properties.info.sessionID + "/" + evt.properties.info.id,
+          evt.properties.info,
+        )
+      }),
+      Bus.subscribe(MessageV2.Event.PartUpdated, async (evt) => {
+        await sync(
+          "session/part/" +
+            evt.properties.part.sessionID +
+            "/" +
+            evt.properties.part.messageID +
+            "/" +
+            evt.properties.part.id,
+          evt.properties.part,
+        )
+      }),
+    )
+  }
+
+  export function dispose() {
+    for (const unsub of unsubs) unsub()
+    unsubs = []
   }
 
   export const URL =
