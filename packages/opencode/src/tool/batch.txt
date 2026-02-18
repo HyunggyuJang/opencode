@@ -1,6 +1,6 @@
 Run multiple independent tool calls in parallel.
 
-- Input: JSON array of {tool, parameters}
-- 1-25 calls; ordering not guaranteed
-- Failures do not stop other calls
+- Input object: {"tool_calls": [{"tool": "name", "parameters": {...}}]}
+- 1-25 calls per batch
+- Calls execute in parallel; failures do not stop other calls
 - Avoid dependent steps or nested batches
