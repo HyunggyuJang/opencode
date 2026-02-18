@@ -1,6 +1,6 @@
-Read a file from disk.
+Read a file or directory from disk.
 
-- filePath must be absolute.
-- offset/limit are optional; default reads up to 2000 lines.
-- Lines longer than 2000 chars are truncated; output includes line numbers.
-- Image files are supported.
+- filePath can be absolute or relative to the workspace.
+- offset/limit are optional; default reads up to 2000 lines or directory entries.
+- Lines longer than 2000 chars are truncated; file output includes line numbers.
+- Image and PDF files are returned as attachments.
