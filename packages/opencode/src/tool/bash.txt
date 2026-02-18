@@ -1,9 +1,10 @@
-Run a shell command in a persistent session.
+Run a shell command.
 
+- Each call runs in a new process (not a persistent shell session).
 - Use for terminal tasks (git, builds, tests), not file reads/edits/searches.
 - Use `workdir` instead of `cd`.
 - Quote paths with spaces.
-- command is required; timeout is optional (ms).
+- command is required; timeout is optional (milliseconds).
 - Output may be truncated; use Read/Grep for large output.
 - Prefer dedicated tools for read/write/search.
 - If commands are independent, run parallel Bash calls; if dependent, chain with &&.
