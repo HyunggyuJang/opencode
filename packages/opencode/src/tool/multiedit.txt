@@ -1,6 +1,7 @@
 Apply multiple edits to one file in one operation.
 
-- Read the file first; file_path must be absolute.
+- Read the file first; filePath can be absolute or relative.
+- Set the target file with the top-level filePath.
 - Each edit uses oldString/newString and optional replaceAll.
-- Edits apply in order and are atomic; any failure aborts.
-- Same matching rules as Edit (exact match, unique unless replaceAll).
+- Edits apply in order; if a later edit fails, earlier edits are not rolled back.
+- Same matching rules as Edit (exact match preferred, unique unless replaceAll).

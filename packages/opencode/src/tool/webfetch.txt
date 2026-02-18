@@ -1,5 +1,6 @@
 Fetch content from a URL.
 
-- URL required; format optional (markdown default).
-- HTTP is upgraded to HTTPS.
-- Read-only; large results may be summarized.
+- URL is required (http:// or https://); format is optional (markdown default).
+- timeout is optional (seconds, max 120).
+- Responses larger than 5MB are rejected.
+- Image responses are returned as attachments.
