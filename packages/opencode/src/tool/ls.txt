@@ -1,5 +1,6 @@
 List files and directories.
 
-- path must be absolute; omit to use the workspace directory.
+- path is optional and can be absolute or relative to the workspace.
 - ignore accepts glob patterns.
+- Results are limited to 100 discovered files.
 - Prefer Glob/Grep when you know what to search.
