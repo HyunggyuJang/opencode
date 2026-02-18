@@ -6,13 +6,13 @@ import { TaskTool } from "../../src/tool/task"
 const root = path.join(__dirname, "../..")
 
 describe("tool.task description", () => {
-  test("mentions task_metadata session_id reuse", async () => {
+  test("mentions task_id reuse and task_result output", async () => {
     await Instance.provide({
       directory: root,
       fn: async () => {
         const tool = await TaskTool.init()
         expect(tool.description).toContain(
-          "The tool output ends with <task_metadata> containing session_id; copy that value when resuming the same subagent.",
+          "The tool output starts with task_id and wraps the subagent response in <task_result>; metadata.sessionId also contains the same session id.",
         )
       },
     })
