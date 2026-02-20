@@ -71,33 +71,32 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
 
                 // Completions API
                 if (body?.messages && url.includes("completions")) {
-                  const last = body.messages[body.messages.length - 1]
                   return {
                     isVision: body.messages.some(
                       (msg: any) =>
                         Array.isArray(msg.content) && msg.content.some((part: any) => part.type === "image_url"),
                     ),
-                    isAgent: last?.role !== "user",
+                    isAgent: body.messages.some(
+                      (msg: any) => msg.role && ["tool", "assistant"].includes(msg.role),
+                    ),
                   }
                 }
 
                 // Responses API
                 if (body?.input) {
-                  const last = body.input[body.input.length - 1]
                   return {
                     isVision: body.input.some(
                       (item: any) =>
                         Array.isArray(item?.content) && item.content.some((part: any) => part.type === "input_image"),
                     ),
-                    isAgent: last?.role !== "user",
+                    isAgent: body.input.some(
+                      (item: any) => item.role && ["tool", "assistant"].includes(item.role),
+                    ),
                   }
                 }
 
-                // Messages API
+                // Messages API (Anthropic)
                 if (body?.messages) {
-                  const last = body.messages[body.messages.length - 1]
-                  const hasNonToolCalls =
-                    Array.isArray(last?.content) && last.content.some((part: any) => part?.type !== "tool_result")
                   return {
                     isVision: body.messages.some(
                       (item: any) =>
@@ -111,7 +110,9 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
                               part.content.some((nested: any) => nested?.type === "image")),
                         ),
                     ),
-                    isAgent: !(last?.role === "user" && hasNonToolCalls),
+                    isAgent: body.messages.some(
+                      (msg: any) => msg.role && ["tool", "assistant"].includes(msg.role),
+                    ),
                   }
                 }
               } catch {}
