@@ -148,6 +148,37 @@ const branchExists = async (pi: ExtensionAPI, cwd: string, branchName: string) =
   return result.code === 0 && !result.killed
 }
 
+// Patterns for files that only ever change version numbers in release commits.
+// We register these in .git/info/attributes (never committed) and configure a
+// keep-ours merge driver so rebase can apply release bump commits conflict-free.
+const VERSION_FILE_PATTERNS = [
+  "bun.lock",
+  "packages/*/package.json",
+  "packages/*/*/package.json",
+  "packages/extensions/zed/extension.toml",
+  "sdks/*/package.json",
+]
+
+const ensureMergeDrivers = async (pi: ExtensionAPI, repoRoot: string) => {
+  const gitDir = await getGitDir(pi, repoRoot)
+  if (!gitDir) return
+
+  // Register the driver in local git config (idempotent).
+  await pi.exec("git", ["config", "--local", "merge.keep-ours.name", "Keep ours (version bump)"], { cwd: repoRoot })
+  await pi.exec("git", ["config", "--local", "merge.keep-ours.driver", "cp %A %D"], { cwd: repoRoot })
+
+  // Write patterns to .git/info/attributes (not committed).
+  const infoDir = path.join(gitDir, "info")
+  if (!fs.existsSync(infoDir)) fs.mkdirSync(infoDir, { recursive: true })
+
+  const attrFile = path.join(infoDir, "attributes")
+  const marker = "# keep-ours merge driver for version-bump files"
+  const block = [marker, ...VERSION_FILE_PATTERNS.map((p) => `${p} merge=keep-ours`)].join("\n") + "\n"
+
+  const existing = fs.existsSync(attrFile) ? fs.readFileSync(attrFile, "utf8") : ""
+  if (!existing.includes(marker)) fs.writeFileSync(attrFile, existing + block)
+}
+
 const formatCommand = (command: string, args: string[]) => `${command} ${args.join(" ")}`.trim()
 
 const formatCommandError = (
@@ -253,6 +284,7 @@ const run = async (pi: ExtensionAPI, ctx: ExtensionContext) => {
     await runCheckedCommand(pi, repoRoot, "git", ["fetch", remote, "--tags"])
     await runCheckedCommand(pi, repoRoot, "git", ["switch", latestPatch])
     await runCheckedCommand(pi, repoRoot, "git", ["switch", "-c", nextBranch])
+    await ensureMergeDrivers(pi, repoRoot)
     await runCheckedCommand(pi, repoRoot, "git", ["-c", "rerere.enabled=true", "rebase", "--rebase-merges", latestTag])
     await runCheckedCommand(pi, repoRoot, "bun", ["run", "self-build"])
 
